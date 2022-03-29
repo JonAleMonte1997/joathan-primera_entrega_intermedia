@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,8 +32,19 @@ public class Patient {
     private List<VitalSign> vitalSignList;
 
     public Patient(PatientDto patientDto) {
+
         this.name = patientDto.getName();
         this.dateOfBirth = patientDto.getDateOfBirth();
-        this.vitalSignList = patientDto.getVitalSignDtoList().stream().map(VitalSign::new).collect(Collectors.toList());
+
+        if (patientDto.getVitalSignDtoList() != null)
+            this.vitalSignList = patientDto.getVitalSignDtoList().stream().map(VitalSign::new).collect(Collectors.toList());
+        else
+            this.vitalSignList = new ArrayList<>();
+    }
+
+    public void copyAttributes(Patient patient) {
+        this.name = patient.getName();
+        this.dateOfBirth = patient.getDateOfBirth();
+        this.vitalSignList = patient.getVitalSignList();
     }
 }

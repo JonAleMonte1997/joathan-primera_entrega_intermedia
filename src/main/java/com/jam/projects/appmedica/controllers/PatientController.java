@@ -27,6 +27,12 @@ public class PatientController {
         return ResponseEntity.ok(patientService.findAllPatientWithPagination(offset.orElse(0), pageSize.orElse(5)));
     }
 
+    @GetMapping("/count")
+    public ResponseEntity<Long> count() {
+
+        return ResponseEntity.ok(patientService.count());
+    }
+
     @GetMapping("/name/{name}")
     public ResponseEntity<List<Patient>> findAllPatientByName(@PathVariable String name) {
 
@@ -57,6 +63,12 @@ public class PatientController {
         return  ResponseEntity.ok(patientService.addVitalSignByPatientId(id, vitalSignDto));
     }
 
+    @PostMapping("/batch")
+    public ResponseEntity<List<Patient>> addPatients(@RequestBody List<Patient> patientList) {
+
+        return ResponseEntity.ok(patientService.addPatients(patientList));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Patient> updatePatientNameAndDateOfBirth(@PathVariable Integer id, @RequestBody PatientDto patientDto) {
 
@@ -73,6 +85,6 @@ public class PatientController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePatient(@PathVariable Integer id) {
 
-        patientService.deletePatient(id);
+        patientService.delete(id);
     }
 }

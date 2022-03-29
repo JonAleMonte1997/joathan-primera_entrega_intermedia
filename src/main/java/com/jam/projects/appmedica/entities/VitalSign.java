@@ -4,7 +4,7 @@ import com.jam.projects.appmedica.dtos.VitalSignDto;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
+import javax.persistence.Embeddable;
 
 @Embeddable
 @Data

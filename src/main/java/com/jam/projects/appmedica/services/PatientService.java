@@ -4,27 +4,30 @@ import com.jam.projects.appmedica.dtos.PatientDto;
 import com.jam.projects.appmedica.dtos.VitalSignDto;
 import com.jam.projects.appmedica.entities.Patient;
 import com.jam.projects.appmedica.entities.VitalSign;
+import com.jam.projects.appmedica.exceptions.MaxSizeListExceededException;
+import com.jam.projects.appmedica.generic.GenericService;
 import com.jam.projects.appmedica.repositories.PatientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
-import java.util.ArrayList;
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class PatientService {
+@Transactional
+public class PatientService extends GenericService<Patient, Integer> {
 
-    @Autowired
-    PatientRepository patientRepository;
+    private PatientRepository patientRepository;
+
+    protected PatientService(PatientRepository repository) {
+        super(repository);
+        this.patientRepository = repository;
+    }
 
     public Patient createPatient(PatientDto patientDto) {
-
-        if (patientDto.getVitalSignDtoList() == null)
-            throw new IllegalArgumentException("Falta la lista de signos vitales");
 
         return patientRepository.save(new Patient(patientDto));
     }
@@ -44,7 +47,7 @@ public class PatientService {
         Optional<Patient> patient = patientRepository.findById(id);
 
         if (patient.isEmpty())
-            throw new EntityNotFoundException("Patient not found");
+            throw new EntityNotFoundException("Patient with id " + id +" not found");
 
         return patient.get();
     }
@@ -73,13 +76,6 @@ public class PatientService {
         return patientRepository.save(patient);
     }
 
-    public void deletePatient(Integer id) {
-
-        Patient patient = findPatientById(id);
-
-        patientRepository.delete(patient);
-    }
-
     public Patient updatePatientVitalSign(Integer id, List<VitalSignDto> vitalSignDtoList) {
 
         Patient patient = findPatientById(id);
@@ -89,5 +85,39 @@ public class PatientService {
         patient.setVitalSignList(vitalSignList);
 
         return patientRepository.save(patient);
+    }
+
+    /*
+        Metodo batch que crea o modifica dependiendo el caso, hasta un máximo de 50 pacientes
+     */
+    public List<Patient> addPatients(List<Patient> patientList) {
+
+        if (patientList.size() > 50)
+            throw new MaxSizeListExceededException("The list should not exceed 50 patients");
+
+        List<Patient> patientsToCreateList = patientList.stream()
+                .filter(patient -> patient.getId() == null)
+                .collect(Collectors.toList());
+
+        List<Patient> patientsToUpdateList = patientList.stream()
+                .filter(patient -> patient.getId() != null)
+                .collect(Collectors.toList());
+
+        patientsToUpdateList.forEach(patient -> updatePatient(patient));
+
+        List<Patient> patientsCreatedList = patientRepository.saveAll(patientsToCreateList);
+
+        patientsCreatedList.addAll(patientsToUpdateList);
+
+        return patientsCreatedList;
+    }
+
+    private Patient updatePatient(Patient patient) {
+
+        Patient patientToUpdate = findPatientById(patient.getId());
+
+        patientToUpdate.copyAttributes(patient);
+
+        return patientRepository.save(patientToUpdate);
     }
 }
